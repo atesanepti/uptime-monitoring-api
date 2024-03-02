@@ -1,7 +1,9 @@
 // Dependencies
 const http = require("http");
 const { handleReqRes } = require("./helpers/handleReqRes");
-const data = require("./lib/data");
+
+
+
 // App Object
 const app = {};
 

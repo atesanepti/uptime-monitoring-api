@@ -1,6 +1,7 @@
 // Dependencies
 const data = require("../lib/data");
-const { jsonParser } = require("../utilities/jsonParser");
+const { jsonParser } = require("../helpers/utilities");
+const { token } = require("./token.handler");
 
 // Simple Handler Object
 const routeHandler = {};
@@ -25,13 +26,20 @@ routeHandler.user.get = (reqProps, callback) => {
       ? reqProps.queryString.phone
       : false;
   if (phone) {
-    data.read("form_data", `${phone}`, (error, user) => {
-      if (!error) {
-        const parsedUser = { ...jsonParser(user) };
-        delete parsedUser.password;
-        callback(200, parsedUser);
+    const id = reqProps.headers.id;
+    token.verify(id,phone, (tokenId) => {
+      if (tokenId) {
+        data.read("form_data", `${phone}`, (error, user) => {
+          if (!error) {
+            const parsedUser = { ...jsonParser(user) };
+            delete parsedUser.password;
+            callback(200, parsedUser);
+          } else {
+            callback(500, { message: "The use not exist" });
+          }
+        });
       } else {
-        callback(500, { message: "The use not exist" });
+        callback(402, { message: "authentication filed!" });
       }
     });
   } else {
@@ -114,28 +122,35 @@ routeHandler.user.put = (reqProps, callback) => {
 
   if (phone) {
     if (firstName || lastName || password) {
-      data.read("form_data", `${phone}`, (error, user) => {
-        if (!error) {
-          const parsedUser = { ...jsonParser(user) };
-          if (firstName) {
-            parsedUser.firstName = firstName;
-          }
-          if (lastName) {
-            parsedUser.lastName = lastName;
-          }
-          if (password) {
-            parsedUser.password = password;
-          }
-
-          data.update("form_data", `${phone}`, parsedUser, (error) => {
+      const id = reqProps.headers.id;
+      token.verify(id,phone, (tokenId) => {
+        if (tokenId) {
+          data.read("form_data", `${phone}`, (error, user) => {
             if (!error) {
-              callback(200, { message: "your data have updated" });
+              const parsedUser = { ...jsonParser(user) };
+              if (firstName) {
+                parsedUser.firstName = firstName;
+              }
+              if (lastName) {
+                parsedUser.lastName = lastName;
+              }
+              if (password) {
+                parsedUser.password = password;
+              }
+
+              data.update("form_data", `${phone}`, parsedUser, (error) => {
+                if (!error) {
+                  callback(200, { message: "your data have updated" });
+                } else {
+                  callback(500, { message: `${error.message}` });
+                }
+              });
             } else {
-              callback(500, { message: `${error.message}` });
+              callback(500, { message: error.message });
             }
           });
         } else {
-          callback(500, { message: error.message });
+          callback(402, { message: "authentication filed" });
         }
       });
     } else {
@@ -149,24 +164,29 @@ routeHandler.user.put = (reqProps, callback) => {
 };
 
 routeHandler.user.delete = (reqProps, callback) => {
-    const phone =
-      typeof reqProps.queryString.phone === "string" &&
-      reqProps.queryString.phone.trim().length === 11
-        ? reqProps.queryString.phone
-        : false;
-    if(phone){
-      data.delete("form_data",`${phone}`,(error)=>{
-        if(!error){
-          callback(200,{message : `${phone} : user deleted`})
-        }
-        else {
-          callback(500,{message : error.message})
-        }
-      })
-    }
-    else{
-      callback(400,{message : "Enter valid user phone"})
-    }
+  const phone =
+    typeof reqProps.queryString.phone === "string" &&
+    reqProps.queryString.phone.trim().length === 11
+      ? reqProps.queryString.phone
+      : false;
+  if (phone) {
+    const id = reqProps.headers.id;
+    token.verify(id,phone, (tokenId) => {
+      if (tokenId) {
+        data.delete("form_data", `${phone}`, (error) => {
+          if (!error) {
+            callback(200, { message: `${phone} : user deleted` });
+          } else {
+            callback(500, { message: error.message });
+          }
+        });
+      } else {
+        callback(402, { message: "authentication filed" });
+      }
+    });
+  } else {
+    callback(400, { message: "Enter valid user phone" });
+  }
 };
 
 module.exports = routeHandler;

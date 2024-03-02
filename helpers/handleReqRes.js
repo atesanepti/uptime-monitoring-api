@@ -3,12 +3,7 @@ const url = require("url");
 const { StringDecoder } = require("string_decoder");
 const routes = require("../routes");
 const { notFound } = require("../handlers/notFound");
-const {jsonParser} = require("../utilities/jsonParser");
-
-
-
-
-
+const { jsonParser } = require("./utilities");
 
 // Handler Objects
 const handler = {};
@@ -34,7 +29,7 @@ handler.handleReqRes = (req, res) => {
   const routeHandler = routes[path] ? routes[path] : notFound;
 
   const decoder = new StringDecoder("utf-8");
-  
+
   // Posted data get
   let body = "";
   req.on("data", (chunk) => {
@@ -52,7 +47,6 @@ handler.handleReqRes = (req, res) => {
       res.writeHead(status);
       res.end(payloadString);
     });
-    
   });
 };
 
