@@ -145,7 +145,7 @@ routeHandler.token.verify = (id, phone, callback) => {
     if (!error && userToken) {
       const parsedUserToken = { ...jsonParser(userToken) };
       if (phone === parsedUserToken.phone) {
-        callback(true);
+        callback(true, userToken);
       } else {
         callback(false);
       }
